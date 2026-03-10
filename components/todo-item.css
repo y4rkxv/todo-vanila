@@ -86,7 +86,7 @@
     translate: -50% -50%;
     width: 16px;
     height: 16px;
-    background: url('../../icons/icon-check_white.svg') center/contain no-repeat;
+    background: url('../icons/icon-check_white.svg') center/contain no-repeat;
   }
 }
 
