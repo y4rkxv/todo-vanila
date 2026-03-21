@@ -18,6 +18,7 @@ class Todo {
   stateClasses = {
     isVisible: 'is-visible',
     isDisappearing: 'is-disappearing',
+    isEditing: 'is-editing',
   };
 
   localStorageKey = 'todo-items';
@@ -129,6 +130,48 @@ class Todo {
         : '';
   }
 
+  editItem(id) {
+    const itemElement = this.listElement
+      .querySelector(`[data-js-todo-item-checkbox][id="${id}"]`)
+      ?.closest(this.selectors.item);
+    if (!itemElement) return;
+
+    const labelElement = itemElement.querySelector(this.selectors.itemLabel);
+    const item = this.state.items.find(i => i.id === id);
+    if (!item || !labelElement) return;
+
+    const input = document.createElement('input');
+    input.className = 'todo-item__edit-input';
+    input.value = item.title;
+    input.setAttribute('data-js-todo-item-edit-input', '');
+    labelElement.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const save = () => {
+      const newTitle = input.value.trim();
+      if (newTitle.length > 0 && newTitle !== item.title) {
+        this.state.items = this.state.items.map(i =>
+          i.id === id ? { ...i, title: newTitle } : i,
+        );
+        this.saveItemsToLocalStorage();
+      }
+      this.render();
+    };
+
+    input.addEventListener('blur', save, { once: true });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        input.blur();
+      }
+      if (e.key === 'Escape') {
+        input.removeEventListener('blur', save);
+        this.render();
+      }
+    });
+  }
+
   addItem(title) {
     this.state.items.push({
       id: crypto?.randomUUID() ?? Date.now().toString(),
@@ -226,6 +269,14 @@ class Todo {
     }
   };
 
+  onDblClick = ({ target }) => {
+    const label = target.closest(this.selectors.itemLabel);
+    if (!label) return;
+    const itemElement = label.closest(this.selectors.item);
+    const checkboxEl = itemElement?.querySelector(this.selectors.itemCheckBox);
+    if (checkboxEl) this.editItem(checkboxEl.id);
+  };
+
   onChange = ({ target }) => {
     if (target.matches(this.selectors.itemCheckBox)) {
       this.toggleCheckedState(target.id);
@@ -250,6 +301,7 @@ class Todo {
       this.onDeleteAllButtonClick,
     );
     this.listElement.addEventListener('click', this.onClick);
+    this.listElement.addEventListener('dblclick', this.onDblClick);
     this.listElement.addEventListener('change', this.onChange);
   }
 }
